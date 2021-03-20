@@ -202,21 +202,21 @@
             e.preventDefault();
 
             let ops = {
-              "ops": [ // accounting is an array in employees.
+              "ops": [
                 {
-                  "op": "apply_brightness", // First element
+                  "op": "apply_brightness",
                   "val": $("#input_preview_brightness").val()
 
                 },
 
                 {
-                  "op": "apply_contrast", // First element
+                  "op": "apply_contrast",
                   "val": $("#input_preview_contrast").val()
 
                 },
-              ] // End "accounting" array.
+              ]
 
-            } //
+            }
 
             $.ajax({
                 type: "POST",

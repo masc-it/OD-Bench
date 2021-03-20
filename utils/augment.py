@@ -263,7 +263,7 @@ def preview_img(img_path, ops):
     results = []
     for op in ops:
         if int(op["val"]) != 0:
-            # laziness mode on
+            # laziness mode on, we DO NOT care about security here
             out = eval(op["op"])(img, int(op["val"]))
 
             retval, buffer = cv2.imencode('.jpg', out)
