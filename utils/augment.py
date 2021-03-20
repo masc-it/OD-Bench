@@ -256,6 +256,32 @@ def apply_brightness(input_img, brightness=0):
     return buf
 
 
+def apply_saturation(input_img, saturation):
+    imghsv = cv2.cvtColor(input_img, cv2.COLOR_BGR2HSV).astype("float32")
+    (h, s, v) = cv2.split(imghsv)
+    s = s + saturation
+
+    s = np.clip(s, 0, 255)
+    imghsv = cv2.merge([h, s, v])
+    return cv2.cvtColor(imghsv.astype("uint8"), cv2.COLOR_HSV2BGR)
+    # hsv = cv2.cvtColor(input_img, cv2.COLOR_BGR2HSV)
+    # greenMask = cv2.inRange(hsv, (26, 10, 30), (97, 100, 255))
+    #
+    # hsv[:, :, 1] = greenMask
+    #
+    # return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+
+def apply_hue(input_img, hue):
+    imghsv = cv2.cvtColor(input_img, cv2.COLOR_BGR2HSV).astype("float32")
+    (h, s, v) = cv2.split(imghsv)
+    h = h + hue
+
+    h = np.clip(h, 0, 255)
+    imghsv = cv2.merge([h, s, v])
+    return cv2.cvtColor(imghsv.astype("uint8"), cv2.COLOR_HSV2BGR)
+
+
 # https://stackoverflow.com/questions/40928205/python-opencv-image-to-byte-string-for-json-transfer
 def preview_img(img_path, ops):
     img = cv2.imread(img_path)

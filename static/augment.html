@@ -124,7 +124,29 @@
 
                     <div class="row">
 
+                        <div class="col-sm-6">
+                            <label for="select_aug">Property</label>
 
+                            <select type="text" class="form-control" id="select_aug" >
+                                <option data-id="apply_contrast">Contrast</option>
+                                <option data-id="apply_brightness">Brightness</option>
+                                <option data-id="apply_hue">Hue</option>
+                                <option data-id="apply_saturation">Saturation</option>
+
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="input_aug_val">Value</label>
+
+                            <input type="text" class="form-control" id="input_aug_val" placeholder="Value" value="10">
+                        </div>
+
+                    </div>
+                        <button id="btn_augmentation_add" type="button" class="btn btn-primary">Add</button>
+
+                        <p id="aug_pipeline"></p>
+
+                    <div class="row" style="display: none">
                         <div class="col-sm-6">
                             <label for="input_preview_brightness">Brightness</label>
 
@@ -162,6 +184,21 @@
 
 <!-- Menu Toggle Script -->
 <script>
+    let aug_pipeline = {
+              "ops": [
+
+              ]
+
+            }
+
+    function add_aug(property, value){
+        return {
+                  "op": property,
+                  "val": value
+
+                }
+    }
+
     $(document).ready(function () {
         $("#menu-toggle").click(function (e) {
             e.preventDefault();
@@ -198,31 +235,24 @@
 
         });
 
+         $("#btn_augmentation_add").click(function (e) {
+             e.preventDefault();
+
+             aug_pipeline["ops"].push(add_aug($('#select_aug').find(":selected").data("id"), $("#input_aug_val").val()))
+
+             $("#aug_pipeline").text(JSON.stringify(aug_pipeline))
+
+         })
+
         $("#btn_preview").click(function (e) {
             e.preventDefault();
 
-            let ops = {
-              "ops": [
-                {
-                  "op": "apply_brightness",
-                  "val": $("#input_preview_brightness").val()
-
-                },
-
-                {
-                  "op": "apply_contrast",
-                  "val": $("#input_preview_contrast").val()
-
-                },
-              ]
-
-            }
 
             $.ajax({
                 type: "POST",
                 url: "/preview_augmentation",
                 data: {
-                    "ops": JSON.stringify(ops),
+                    "ops": JSON.stringify(aug_pipeline),
                     "img": $("#input_preview_img").val(),
 
                 },
