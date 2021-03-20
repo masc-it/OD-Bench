@@ -282,6 +282,27 @@ def apply_hue(input_img, hue):
     return cv2.cvtColor(imghsv.astype("uint8"), cv2.COLOR_HSV2BGR)
 
 
+def apply_red(input_img, red):
+
+    img = input_img.copy()
+    img[:, :, 0] = red
+    return img
+
+
+def apply_blue(input_img, blue):
+
+    img = input_img.copy()
+    img[:, :, 2] = blue
+    return img
+
+
+def apply_green(input_img, green):
+
+    img = input_img.copy()
+    img[:, :, 1] = green
+    return img
+
+
 # https://stackoverflow.com/questions/40928205/python-opencv-image-to-byte-string-for-json-transfer
 def preview_img(img_path, ops):
     img = cv2.imread(img_path)
