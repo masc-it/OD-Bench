@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>OD Bench - Augment</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="static/css/simple-sidebar.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="d-flex" id="wrapper">
+
+    <!-- Sidebar -->
+    <div class="bg-light border-right" id="sidebar-wrapper">
+        <div class="sidebar-heading">OD Bench</div>
+        <div class="list-group list-group-flush">
+            <a href="/augmentation" class="list-group-item list-group-item-action bg-light">Augmentation</a>
+            <a href="/" class="list-group-item list-group-item-action bg-light">Annotations</a>
+
+
+        </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <!-- <button class="btn btn-primary" id="menu-toggle">Toggle Menu</button>-->
+
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Link</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Dropdown
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#">Action</a>
+                            <a class="dropdown-item" href="#">Another action</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#">Something else here</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <h1 class="mt-4">Augmentation</h1>
+
+            <form id="form_load_xml">
+
+                <div class="form-group">
+                    <label for="input_xml_path">Dataset root directory</label>
+                    <input type="text" class="form-control" id="input_xml_path" placeholder="Dataset root directory">
+
+                </div>
+
+                <div class="form-group">
+                    <label for="input_angles">Angles (comma separated)</label>
+                    <input type="text" class="form-control" id="input_angles" placeholder="Angles">
+
+                </div>
+
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="input_resize">
+                    <label class="form-check-label" for="input_resize">Resize boxes</label>
+                </div>
+                <div id="resize_container" class="form-group" style="display: none">
+
+                    <div class="row">
+
+
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="input_resize_width" placeholder="width" value="300">
+
+                        </div>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="input_resize_height" placeholder="height" value="300">
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn_load_info" type="button" class="btn btn-primary">Go</button>
+
+            </form>
+
+
+            <div class="row">
+                <div class="col-sm-12">
+            <form id="form_preview">
+
+                <div class="form-group">
+                    <label for="input_preview_img">Test image path</label>
+                    <input type="text" class="form-control" id="input_preview_img" placeholder="Test image path">
+
+                </div>
+
+                <div id="preview_container" class="form-group" >
+
+                    <div class="row">
+
+
+                        <div class="col-sm-6">
+                            <label for="input_preview_brightness">Brightness</label>
+
+                            <input type="text" class="form-control" id="input_preview_brightness" placeholder="brightness" value="100">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="input_preview_contrast">Contrast</label>
+
+                            <input type="text" class="form-control" id="input_preview_contrast" placeholder="contrast" value="0">
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <button id="btn_preview" type="button" class="btn btn-primary">Go</button>
+
+            </form>
+                </div>
+
+                <div id="previews">
+
+                    </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+<!-- Bootstrap core JavaScript -->
+<script src="static/vendor/jquery/jquery.min.js"></script>
+<script src="static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+<!-- Menu Toggle Script -->
+<script>
+    $(document).ready(function () {
+        $("#menu-toggle").click(function (e) {
+            e.preventDefault();
+            $("#wrapper").toggleClass("toggled");
+        });
+
+        $("#btn_load_info").click(function (e) {
+            e.preventDefault();
+
+            let resize_size = ""
+
+            if ($("#input_resize").is(":checked")) {
+                resize_size = $("#input_resize_width").val() + "," + $("#input_resize_height").val()
+            }
+
+
+
+            $.ajax({
+                type: "POST",
+                url: "/do_augmentation",
+                data: {
+                    "path": $("#input_xml_path").val(),
+                    "angles": $("#input_angles").val(),
+                    "resize" : resize_size
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                    console.log(data)
+
+                }
+            });
+
+
+        });
+
+        $("#btn_preview").click(function (e) {
+            e.preventDefault();
+
+            let ops = {
+              "ops": [ // accounting is an array in employees.
+                {
+                  "op": "apply_brightness", // First element
+                  "val": $("#input_preview_brightness").val()
+
+                },
+
+                {
+                  "op": "apply_contrast", // First element
+                  "val": $("#input_preview_contrast").val()
+
+                },
+              ] // End "accounting" array.
+
+            } //
+
+            $.ajax({
+                type: "POST",
+                url: "/preview_augmentation",
+                data: {
+                    "ops": JSON.stringify(ops),
+                    "img": $("#input_preview_img").val(),
+
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                    let res = JSON.parse(data)
+                    $("#previews").html("")
+                    res.forEach((item) => {
+
+                        $("#previews").append(
+
+                            "<div class=\"col-sm-12\">" +
+                            "<p>" + item.name + "</p>"+
+                            "<img src=\"data:image/png;base64," + item.val.trim() + "\" >" +
+                            "</div>"
+
+                        )
+                      //console.log('ID: ' + item.name);
+                     // console.log('MSG: ' + item.val);
+
+                    });
+                    //$("#img_preview").attr('src', 'data:image/png;base64,' + data)
+
+                }
+            });
+
+
+        });
+    })
+
+</script>
+
+</body>
+
+</html>
