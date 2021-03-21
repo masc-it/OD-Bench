@@ -105,7 +105,6 @@
                     </div>
                 </div>
 
-                <button id="btn_load_info" type="button" class="btn btn-primary">Go</button>
 
             </form>
 
@@ -165,7 +164,10 @@
 
                 </div>
 
-                <button id="btn_preview" type="button" class="btn btn-primary">Go</button>
+
+                <button id="btn_preview" type="button" class="btn btn-primary">Preview</button>
+
+                <button id="btn_load_info" type="button" class="btn btn-primary">Apply</button>
 
             </form>
                 </div>
@@ -174,6 +176,7 @@
 
                     </div>
             </div>
+
         </div>
     </div>
 
@@ -208,6 +211,15 @@
             $("#wrapper").toggleClass("toggled");
         });
 
+        $("#input_resize").change(function () {
+
+            if ($(this).is(":checked")) {
+                $("#resize_container").show()
+            } else {
+                $("#resize_container").hide()
+            }
+
+        })
         $("#btn_load_info").click(function (e) {
             e.preventDefault();
 
@@ -225,7 +237,8 @@
                 data: {
                     "path": $("#input_xml_path").val(),
                     "angles": $("#input_angles").val(),
-                    "resize" : resize_size
+                    "resize" : resize_size,
+                    "ops": JSON.stringify(aug_pipeline),
                 },
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 success: function (data) {

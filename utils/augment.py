@@ -129,7 +129,7 @@ def _resize_save(img_path, out_path, width, height):
     cv2.imwrite(out_path, resized_image)
 
 
-def run_rotation(dataset_path, angles, new_size=None):
+def run_aug(dataset_path, angles, ops, new_size=None):
     cwd = dataset_path
 
     angles.append(0)
@@ -156,6 +156,7 @@ def run_rotation(dataset_path, angles, new_size=None):
 
         for label in labels:
             xml_tree = xml_utils.parse_xml(label)
+
             xml_root = xml_tree.getroot()
 
             img_path = imgs_path + os.path.splitext(os.path.basename(label))[0] + ".jpg"
@@ -178,6 +179,8 @@ def run_rotation(dataset_path, angles, new_size=None):
 
             w = int(size.find('width').text)
             h = int(size.find('height').text)
+
+            xml_tree_0_deg = ""
 
             for a in angles:
 
@@ -221,7 +224,16 @@ def run_rotation(dataset_path, angles, new_size=None):
                 if a != 0:
                     xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + "_%d_aug.xml" % a)
                 else:
+
                     xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + ".xml")
+
+                    img = cv2.imread(out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg")
+                    for op in ops:
+                        if int(op["val"]) != 0:
+                            # laziness mode on, we DO NOT care about security here
+                            out = eval(op["op"])(img, int(op["val"]))
+                            cv2.imwrite(out_path + os.path.splitext(os.path.basename(label))[0] + "_%s_%s_aug.jpg" % (op["op"].split("_")[1], op["val"]), out)
+                        xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + "_%s_%s_aug.xml" % (op["op"].split("_")[1], op["val"]))
 
 
 # https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv
@@ -239,6 +251,7 @@ def apply_contrast(input_img, contrast=0):
 
 
 def apply_brightness(input_img, brightness=0):
+    buf = input_img.copy()
     if brightness != 0:
         if brightness > 0:
             shadow = brightness
@@ -249,9 +262,7 @@ def apply_brightness(input_img, brightness=0):
         alpha_b = (highlight - shadow) / 255
         gamma_b = shadow
 
-        buf = cv2.addWeighted(input_img, alpha_b, input_img, 0, gamma_b)
-    else:
-        buf = input_img.copy()
+        buf = cv2.addWeighted(buf, alpha_b, buf, 0, gamma_b)
 
     return buf
 

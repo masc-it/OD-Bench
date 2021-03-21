@@ -32,12 +32,15 @@ def do_augmentation():
     d_path = request.form['path']
     angles = request.form['angles']
     resize = request.form['resize']
+    ops = request.form['ops']
+
+    operations = json.loads(ops)["ops"]
 
     new_size = None
     if resize != "":
         new_size = list(map(lambda x: int(x), resize.split(",")))
 
-    augment.run_rotation(d_path, list(map(lambda x: int(x), angles.split(","))), new_size)
+    augment.run_aug(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
     return "ok"
 
 

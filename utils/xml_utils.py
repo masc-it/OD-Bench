@@ -48,6 +48,12 @@ def clean_aug(dir_path):
             continue
 
 
+def clean(dir_path):
+
+    for filename in glob.glob(dir_path + '*'):
+        os.remove(filename)
+
+
 def convert(size, box):
     dw = 1./(size[0])
     dh = 1./(size[1])
@@ -131,13 +137,17 @@ def convert_annotation2(dir_path, output_path, image_path, classes):
 def main(dataset_path, classes):
 
     cwd = dataset_path
-    
-    for folder in ['train/out_labels', 'test/out_labels']:
-        full_dir_path = cwd + '/' + folder + "/"
+
+    yolo_dataset = cwd + '/yolo/'
+
+    for folder in ['train', 'test']:
+        full_dir_path = cwd + '/' + folder + "/out_labels/"
         image_paths = get_files_in_dir(full_dir_path)
-        output_path = full_dir_path + "out_yolo/"
+        output_path = yolo_dataset + folder + "/labels/"
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+
+        clean(output_path)
         for image_path in image_paths:
             convert_annotation2(full_dir_path, output_path, image_path, classes)
 
