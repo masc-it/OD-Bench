@@ -233,21 +233,31 @@
             console.log(boxes)
         })
         function createCanvas(x,y,w,h, indx){
+            let btn = document.createElement("button")
+            btn.textContent = "edit"
+            btn.style.position='absolute';
+
+            btn.style.zIndex= 9999;
+            btn.style.top = "-30" + "px"
+            btn.style.left = "0" + "px"
+            btn.setAttribute('x', x);
+            btn.setAttribute('y', y);
+            btn.setAttribute('w', w);
+            btn.setAttribute('h', h);
+
             var divv = document.createElement("div")
             divv.id = "c_overlay_" + indx
             divv.style.width=w + "px";
             divv.style.height=h + "px";
 
+
             //Position canvas
             divv.style.position='absolute';
             divv.style.left=x + "px";
             divv.style.top=y+ "px";
-            divv.setAttribute('x', x);
-            divv.setAttribute('y', y);
-            divv.setAttribute('w', w);
-            divv.setAttribute('h', h);
-            //divv.style.zIndex="9999";
-            divv.addEventListener('click', function(e) {
+
+            //divv.style.zIndex= 9999;
+            btn.addEventListener('click', function(e) {
 
                 console.log(boxes)
                 //let canv = this.firstChild;
@@ -256,7 +266,7 @@
 
 
                 for (let [i, user] of boxes.entries()) {
-                    if (user.id == this.id.split("_")[2]) {
+                    if (user.id == this.parentElement.id.split("_")[2]) {
                         boxes.splice(i, 1);
                         break
                     }
@@ -264,7 +274,7 @@
 
                 console.log(boxes)
 
-                this.remove()
+                this.parentElement.remove()
                 //boxes.splice(parseInt(this.id.split("_")[1]), 1)
 
             }, false);
@@ -293,6 +303,7 @@
             drawBorder(context, 0, 0, w, h)
             //context.fill();
 
+            divv.appendChild(btn)
             divv.appendChild(canvas)
 
             $(".rcrop-wrapper").append(divv)

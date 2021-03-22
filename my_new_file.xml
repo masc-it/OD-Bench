@@ -1,13 +1,13 @@
 <annotation>
 	<folder>imgs</folder>
-	<filename>F:\datasets\people\people_1\train\imgs\FudanPed00002.jpg</filename>
-	<path>F:\datasets\people\people_1\train\imgs\FudanPed00002.jpg</path>
+	<filename>F:\datasets\people\people_1\train\imgs\FudanPed00001.jpg</filename>
+	<path>F:\datasets\people\people_1\train\imgs\FudanPed00001.jpg</path>
 	<source>
 		<database>Unknown</database>
 	</source>
 	<size>
-		<width>455</width>
-		<height>414</height>
+		<width>559</width>
+		<height>536</height>
 		<depth>3</depth>
 	</size>
 	<segmented>0</segmented>
@@ -18,10 +18,10 @@
 		<truncated>0</truncated>
 		<difficult>0</difficult>
 		<bndbox>
-			<xmin>65</xmin>
-			<ymin>91</ymin>
-			<xmax>188</xmax>
-			<ymax>380</ymax>
+			<xmin>56</xmin>
+			<ymin>54</ymin>
+			<xmax>503</xmax>
+			<ymax>483</ymax>
 		</bndbox>
 	</object>
     
@@ -31,10 +31,23 @@
 		<truncated>0</truncated>
 		<difficult>0</difficult>
 		<bndbox>
-			<xmin>134</xmin>
-			<ymin>98</ymin>
-			<xmax>222</xmax>
-			<ymax>370</ymax>
+			<xmin>237</xmin>
+			<ymin>144</ymin>
+			<xmax>503</xmax>
+			<ymax>483</ymax>
+		</bndbox>
+	</object>
+    
+	<object>
+		<name>person</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>323</xmin>
+			<ymin>214</ymin>
+			<xmax>503</xmax>
+			<ymax>483</ymax>
 		</bndbox>
 	</object>
     
