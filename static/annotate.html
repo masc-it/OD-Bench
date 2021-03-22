@@ -24,9 +24,60 @@
     <script src="static/js/rcrop/rcrop.min.js" ></script>
         <link href="static/js/rcrop/rcrop.min.css" media="screen" rel="stylesheet" type="text/css">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js" integrity="sha512-Gs+PsXsGkmr+15rqObPJbenQ2wB3qYvTHuJO6YJzPe/dTLvhy0fmae2BcnaozxDo5iaF8emzmCZWbQ1XXiX2Ig==" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.css" integrity="sha512-2eMmukTZtvwlfQoG8ztapwAH5fXaQBzaMqdljLopRSA0i6YKM8kBAOrSSykxu9NN9HrtD45lIqfONLII2AFL/Q==" crossorigin="anonymous" />
 
+    <style>
+#image-4-wrapper .rcrop-outer-wrapper{
+    opacity: .25;
+}
+#image-4-wrapper .rcrop-outer{
+    background: #000
+}
+#image-4-wrapper .rcrop-croparea-inner{
+    border: 1px dashed #fff;
+}
+
+#image-4-wrapper .rcrop-handler-corner{
+    width:12px;
+    height: 12px;
+    background: none;
+    border : 0 solid #51aeff;
+}
+#image-4-wrapper .rcrop-handler-top-left{
+    border-top-width: 4px;
+    border-left-width: 4px;
+    top:-2px;
+    left:-2px
+}
+#image-4-wrapper .rcrop-handler-top-right{
+    border-top-width: 4px;
+    border-right-width: 4px;
+    top:-2px;
+    right:-2px
+}
+#image-4-wrapper .rcrop-handler-bottom-right{
+    border-bottom-width: 4px;
+    border-right-width: 4px;
+    bottom:-2px;
+    right:-2px
+}
+#image-4-wrapper .rcrop-handler-bottom-left{
+    border-bottom-width: 4px;
+    border-left-width: 4px;
+    bottom:-2px;
+    left:-2px
+}
+#image-4-wrapper .rcrop-handler-border{
+    display: none;
+}
+
+
+#image-4-wrapper .clayfy-touch-device.clayfy-handler{
+    background: none;
+    border : 0 solid #51aeff;
+    border-bottom-width: 6px;
+    border-right-width: 6px;
+}
+    </style>
 </head>
 
 <body>
@@ -105,7 +156,7 @@
 
             <div id="demo-basic">
             </div>
-                <div id="previews">
+                <div class="image-wrapper" id="image-4-wrapper" >
 
                     </div>
 
@@ -144,13 +195,7 @@
         });
 
         let $image2 = ""
-        var fill = function () {
-                        let values = $image2.rcrop('getValues');
-                        console.log(values)
 
-                        //$(".c_overlay").remove()
-
-                    };
 
         $("#btn_load_prev").click(function (e) {
             e.preventDefault();
@@ -197,10 +242,10 @@
                     if ( imgData.img === "") return
 
 
-                    $("#previews").html(
+                    $("#image-4-wrapper").html(
 
                             "<div class=\"col-sm-12\">" +
-                            "<img id='imgg' src=\"data:image/png;base64," + imgData.img + "\" >" +
+                            "<img  id='imgg' src=\"data:image/png;base64," + imgData.img + "\" >" +
                             "</div>"
 
                         )
@@ -212,8 +257,20 @@
                     // Initilize
                     $image2.rcrop();
 
+                    let btn = document.createElement("button")
+                    btn.textContent = "Confirm"
+                    btn.style.position='absolute';
+
+                    btn.style.zIndex= 99999;
+                    btn.style.top = "-30" + "px"
+                    btn.style.left = "0" + "px"
+                    btn.addEventListener('click', function(e) {
+
+                        canvasCallback()
+                    })
+                    document.getElementsByClassName("rcrop-handler-wrapper")[0].appendChild(btn)
                     // Fill inputs when Responsive Cropper is ready and when crop area is being resized or dragged
-                    $image2.on('rcrop-changed rcrop-ready', fill);
+                    //$image2.on('rcrop-changed', canvasCallback);
 
 
                 }
@@ -222,8 +279,7 @@
 
         });
 
-        $("#btn_new_bbox").click(function (e) {
-            e.preventDefault();
+        function canvasCallback(){
             let values = $image2.rcrop('getValues');
 
             boxes.push(buildBox(num_boxes, values.x, values.y, values.width, values.height))
@@ -231,6 +287,10 @@
              createCanvas(values.x, values.y, values.width, values.height, num_boxes++)
 
             console.log(boxes)
+        }
+        $("#btn_new_bbox").click(function (e) {
+            e.preventDefault();
+            canvasCallback()
         })
         function createCanvas(x,y,w,h, indx){
             let btn = document.createElement("button")
