@@ -5,12 +5,17 @@ import utils.resize as resize
 import os
 from copy import deepcopy
 import base64
+import imutils
 
 
 def rotate_image(image, angle):
     image_center = tuple(np.array(image.shape[1::-1]) / 2)
     rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
     return cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
+
+
+def rotate_image2(image, angle):
+    return imutils.rotate_bound(image, angle)
 
 
 def rotate_box(corners, angle, cx, cy, h, w):
@@ -52,14 +57,14 @@ def rotate_box(corners, angle, cx, cy, h, w):
 
     M = cv2.getRotationMatrix2D((cx, cy), angle, 1.0)
 
-    # cos = np.abs(M[0, 0])
-    # sin = np.abs(M[0, 1])
+    cos = np.abs(M[0, 0])
+    sin = np.abs(M[0, 1])
     #
-    # nW = int((h * sin) + (w * cos))
-    # nH = int((h * cos) + (w * sin))
+    nW = int((h * sin) + (w * cos))
+    nH = int((h * cos) + (w * sin))
     # adjust the rotation matrix to take into account translation
-    M[0, 2] += (w / 2) - cx
-    M[1, 2] += (h / 2) - cy
+    M[0, 2] += (nW / 2) - cx
+    M[1, 2] += (nH / 2) - cy
     # Prepare the vector to be transformed
     calculated = np.dot(M, corners.T).T
 
@@ -98,29 +103,32 @@ def get_enclosing_box(corners, width, height):
 
     final = np.hstack((xmin, ymin, xmax, ymax, corners[:, 8:])).reshape(-1)
 
-    for i in range(0, 4):
-        if (i == 0 or i == 2) and final[i] >= width:
-            final[i] = width - 1
-            continue
-        if (i == 0 or i == 2) and final[i] <= 0:
-            final[i] = 1
-            continue
-        if (i == 1 or i == 3) and final[i] >= height:
-            final[i] = height - 1
-            continue
-
-        if (i == 1 or i == 3) and final[i] <= 0:
-            final[i] = 1
-            continue
+    # for i in range(0, 4):
+    #     if (i == 0 or i == 2) and final[i] >= width:
+    #         final[i] = width - 1
+    #         continue
+    #     if (i == 0 or i == 2) and final[i] <= 0:
+    #         final[i] = 1
+    #         continue
+    #     if (i == 1 or i == 3) and final[i] >= height:
+    #         final[i] = height - 1
+    #         continue
+    #
+    #     if (i == 1 or i == 3) and final[i] <= 0:
+    #         final[i] = 1
+    #         continue
 
     return final
 
 
-def _rotate_save(img_path, out_path, angle):
+def _rotate_save(img_path, out_path, angle, size):
 
     img = cv2.imread(img_path)
-    img_rot = rotate_image(img, angle)
+    img_rot = rotate_image2(img, angle)
+    rot_h, rot_w = img_rot.shape[:2]
+    img_rot = cv2.resize(img_rot, size)
     cv2.imwrite(out_path, img_rot)
+    return rot_h, rot_w
 
 
 def _resize_save(img_path, out_path, width, height):
@@ -184,9 +192,10 @@ def run_aug(dataset_path, angles, ops, new_size=None):
 
             for a in angles:
 
+                rot_h, rot_w = 0, 0
                 # apply image rotation and save
                 if a != 0:
-                    _rotate_save(out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg", out_path + os.path.splitext(os.path.basename(label))[0] + "_%d_aug.jpg" % a, -int(a))
+                    rot_h, rot_w = _rotate_save(out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg", out_path + os.path.splitext(os.path.basename(label))[0] + "_%d_aug.jpg" % a, int(a), (w,h))
                 # apply bbox rotation
 
                 boxes = []
@@ -195,6 +204,7 @@ def run_aug(dataset_path, angles, ops, new_size=None):
 
                     b = [float(xmlbox.find('xmin').text), float(xmlbox.find('xmax').text),
                          float(xmlbox.find('ymin').text), float(xmlbox.find('ymax').text)]
+
                     if new_size is not None:
                         b = resize.resize_bbox(b, [w_orig, h_orig], new_size)
 
@@ -208,6 +218,10 @@ def run_aug(dataset_path, angles, ops, new_size=None):
                         calculated = rotate_box(corners, -int(a), int(w / 2), int(h / 2), w, h)
 
                         new_bboxes = get_enclosing_box(calculated, w, h)
+                        scale_factor_x = rot_w / w
+                        scale_factor_y = rot_h / h
+
+                        new_bboxes /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y]
                         boxes.append(new_bboxes)
                     else:
                         boxes.append([b[0], b[2], b[1], b[3]])
