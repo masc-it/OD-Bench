@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>OD Bench - Annotate</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="static/css/simple-sidebar.css" rel="stylesheet">
+    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script> -->
+
+
+<!-- Bootstrap core JavaScript -->
+<script src="static/vendor/jquery/jquery.min.js"></script>
+<script src="static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="static/js/rcrop/rcrop.min.js" ></script>
+        <link href="static/js/rcrop/rcrop.min.css" media="screen" rel="stylesheet" type="text/css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js" integrity="sha512-Gs+PsXsGkmr+15rqObPJbenQ2wB3qYvTHuJO6YJzPe/dTLvhy0fmae2BcnaozxDo5iaF8emzmCZWbQ1XXiX2Ig==" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.css" integrity="sha512-2eMmukTZtvwlfQoG8ztapwAH5fXaQBzaMqdljLopRSA0i6YKM8kBAOrSSykxu9NN9HrtD45lIqfONLII2AFL/Q==" crossorigin="anonymous" />
+
+</head>
+
+<body>
+
+<div class="d-flex" id="wrapper">
+
+    <!-- Sidebar -->
+    <div class="bg-light border-right" id="sidebar-wrapper">
+        <div class="sidebar-heading">OD Bench</div>
+        <div class="list-group list-group-flush">
+            <a href="/augmentation" class="list-group-item list-group-item-action bg-light">Augmentation</a>
+            <a href="/export" class="list-group-item list-group-item-action bg-light">Export</a>
+            <a href="/annotate" class="list-group-item list-group-item-action bg-light">Annotate</a>
+
+
+        </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <!-- <button class="btn btn-primary" id="menu-toggle">Toggle Menu</button>-->
+
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Link</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Dropdown
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#">Action</a>
+                            <a class="dropdown-item" href="#">Another action</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#">Something else here</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <h1 class="mt-4">Augmentation</h1>
+
+            <form id="form_load_xml">
+
+                <div class="form-group">
+                    <label for="input_images_path">Images root directory</label>
+                    <input type="text" class="form-control" id="input_images_path" placeholder="Images directory" value="F:\datasets\people\people_1\train\imgs">
+
+                </div>
+
+
+
+            </form>
+
+
+                <button id="btn_load_prev" type="button" class="btn btn-primary">Prev</button>
+
+                <button id="btn_new_bbox" type="button" class="btn btn-primary">New</button>
+                <button id="btn_load_next" type="button" class="btn btn-primary">Next</button>
+
+
+            <div id="demo-basic">
+            </div>
+                <div id="previews">
+
+                    </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+
+<!-- Menu Toggle Script -->
+<script>
+
+    let i = -1
+    let num_boxes = 0
+
+    let boxes = []
+    let imgData = {}
+    function buildBox(id, x,y, w,h){
+
+        return {
+
+            "id" : id,
+            "x_min" : x,
+            "y_min" : y,
+            "x_max" : w+x,
+            "y_max" : h+y
+
+        }
+
+    }
+    $(document).ready(function () {
+        $("#menu-toggle").click(function (e) {
+            e.preventDefault();
+            $("#wrapper").toggleClass("toggled");
+        });
+
+        let $image2 = ""
+        var fill = function () {
+                        let values = $image2.rcrop('getValues');
+                        console.log(values)
+
+                        //$(".c_overlay").remove()
+
+                    };
+
+        $("#btn_load_prev").click(function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "POST",
+                url: "/apply",
+                data: {
+
+                    w: imgData.w,
+                    h: imgData.h,
+                    name: imgData.name,
+                    boxes: JSON.stringify(boxes)
+
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                }
+            })
+        })
+
+        $("#btn_load_next").click(function (e) {
+            e.preventDefault();
+
+             num_boxes = 0
+
+             boxes = []
+             imgData = {}
+            i++
+            $.ajax({
+                type: "POST",
+                url: "/load_img",
+                data: {
+                    "path": $("#input_images_path").val(),
+                    "index": i,
+
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                    imgData = JSON.parse(data)
+
+                    if ( imgData.img === "") return
+
+
+                    $("#previews").html(
+
+                            "<div class=\"col-sm-12\">" +
+                            "<img id='imgg' src=\"data:image/png;base64," + imgData.img + "\" >" +
+                            "</div>"
+
+                        )
+
+
+                    $image2 = $('#imgg')
+
+
+                    // Initilize
+                    $image2.rcrop();
+
+                    // Fill inputs when Responsive Cropper is ready and when crop area is being resized or dragged
+                    $image2.on('rcrop-changed rcrop-ready', fill);
+
+
+                }
+            });
+
+
+        });
+
+        $("#btn_new_bbox").click(function (e) {
+            e.preventDefault();
+            let values = $image2.rcrop('getValues');
+
+            boxes.push(buildBox(num_boxes, values.x, values.y, values.width, values.height))
+
+             createCanvas(values.x, values.y, values.width, values.height, num_boxes++)
+
+            console.log(boxes)
+        })
+        function createCanvas(x,y,w,h, indx){
+            var divv = document.createElement("div")
+            divv.id = "c_overlay_" + indx
+            divv.style.width=w + "px";
+            divv.style.height=h + "px";
+
+            //Position canvas
+            divv.style.position='absolute';
+            divv.style.left=x + "px";
+            divv.style.top=y+ "px";
+            divv.setAttribute('x', x);
+            divv.setAttribute('y', y);
+            divv.setAttribute('w', w);
+            divv.setAttribute('h', h);
+            //divv.style.zIndex="9999";
+            divv.addEventListener('click', function(e) {
+
+                console.log(boxes)
+                //let canv = this.firstChild;
+
+                $image2.rcrop('resize', this.getAttribute("w"), this.getAttribute("h"), this.getAttribute("x"), this.getAttribute("y"));
+
+
+                for (let [i, user] of boxes.entries()) {
+                    if (user.id == this.id.split("_")[2]) {
+                        boxes.splice(i, 1);
+                        break
+                    }
+                 }
+
+                console.log(boxes)
+
+                this.remove()
+                //boxes.splice(parseInt(this.id.split("_")[1]), 1)
+
+            }, false);
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            context.globalAlpha = 0.7;
+
+            //Set canvas width/height
+            canvas.style.width=w ;
+            canvas.style.height=h ;
+
+            //Set canvas drawing area width/height
+            canvas.width = w ;
+            canvas.height = h ;
+
+            //Position canvas
+            canvas.style.position='absolute';
+            canvas.style.left=0 + "px";
+            canvas.style.top=0+ "px";
+            //canvas.style.zIndex="999";
+            canvas.style.border = "solid 1px black"
+            canvas.style.pointerEvents='none'; //Make sure you can click 'through' the canvas
+            context.rect(0, 0, w, h);
+            //context.fillStyle = 'yellow';
+
+            drawBorder(context, 0, 0, w, h)
+            //context.fill();
+
+            divv.appendChild(canvas)
+
+            $(".rcrop-wrapper").append(divv)
+
+
+        }
+        function drawBorder(ctx, xPos, yPos, width, height, thickness = 1)
+        {
+          ctx.fillStyle='#00000000';
+          ctx.fillRect(xPos - (thickness), yPos - (thickness), width + (thickness * 2), height + (thickness * 2));
+        }
+    })
+
+</script>
+
+</body>
+
+</html>

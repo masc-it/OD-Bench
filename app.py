@@ -2,6 +2,8 @@ from flask import Flask, render_template, request
 
 import utils.xml_utils as xml_to_yolo
 import utils.augment as augment
+import utils.annotate_utils as annotate_utils
+
 import json
 
 app = Flask(__name__, static_url_path='/static')
@@ -9,7 +11,7 @@ app = Flask(__name__, static_url_path='/static')
 
 @app.route('/')
 def hello_world():
-    return app.send_static_file('index.html')
+    return app.send_static_file('augment.html')
 
 
 @app.route('/datasetinfo', methods=['POST'])
@@ -25,6 +27,31 @@ def get_dataset_info():
 @app.route('/augmentation')
 def augmentation():
     return app.send_static_file('augment.html')
+
+
+@app.route('/annotate')
+def annotate():
+    return app.send_static_file('annotate.html')
+
+
+@app.route('/load_img', methods=['POST'])
+def load_img():
+    d_path = request.form['path']
+    index = request.form['index']
+
+    return json.dumps(annotate_utils.get_image_base64(d_path, int(index)))
+
+
+@app.route('/apply', methods=['POST'])
+def apply():
+    img_width = request.form['w']
+    img_height = request.form['h']
+    name = request.form['name']
+    boxes = request.form['boxes']
+    boxes = json.loads(boxes)
+    annotate_utils.save_xml(int(img_width), int(img_height), boxes, name)
+
+    return "ok"
 
 
 @app.route('/do_augmentation', methods=['POST'])
