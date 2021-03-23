@@ -259,27 +259,61 @@
 
         function setupCanvas(){
             let btn = document.createElement("span")
-                    btn.className = "fas fa-check-circle"
-                    btn.style.position='absolute'
-                    btn.style.width="30px"
-                    btn.style.height="30px"
-                    btn.style.color = "white"
-                    btn.style.cursor = "pointer"
-                    btn.style.zIndex= 99999;
-                    btn.style.top = "-25" + "px"
-                    btn.style.left = "0" + "px"
-                    btn.addEventListener('click', function(e) {
+            btn.className = "fas fa-check-circle"
+            btn.style.position='absolute'
+            btn.style.width="30px"
+            btn.style.height="30px"
+            btn.style.color = "black"
+            btn.style.cursor = "pointer"
+            btn.style.zIndex= 99999;
+            btn.style.top = "-25" + "px"
+            btn.style.left = "7" + "px"
+            btn.addEventListener('click', function(e) {
 
-                        if ( editMode){
-                            canvasCallbackEdit()
-                            editMode = false
-                            editedBox = {}
-                        } else {
-                            canvasCallback()
+                if ( editMode){
+                    canvasCallbackEdit()
+                    editMode = false
+                    editedBox = {}
+                } else {
+                    canvasCallback()
 
-                        }
-                    })
-                    document.getElementsByClassName("rcrop-handler-wrapper")[0].appendChild(btn)
+                }
+            })
+
+
+            let wrapper = document.getElementsByClassName("rcrop-croparea")[0]
+
+            let dummy = document.createElement("div")
+            dummy.style.width= "30px";
+            dummy.style.height="30px";
+
+            //Position canvas
+            dummy.style.position='absolute';
+            dummy.style.left="0px";
+            dummy.style.top="-30px";
+            dummy.style.backgroundColor = "white"
+
+            let nameInput = document.createElement("input")
+            //nameInput.style.width= "30px";
+            //nameInput.style.height="30px";
+            nameInput.setAttribute("type", "text")
+            nameInput.style.border = "none"
+            nameInput.style.outline = "none"
+            nameInput.defaultValue = "wq";
+            nameInput.style.color = "#212121"
+            nameInput.setAttribute('name', 'label');
+
+            //Position canvas
+            nameInput.style.zIndex= 99999;
+
+            nameInput.style.position='absolute';
+            nameInput.style.left="0px";
+            nameInput.style.bottom="-30px";
+            //nameInput.style.backgroundColor = "white"
+
+            wrapper.appendChild(btn)
+            wrapper.appendChild(dummy)
+            wrapper.appendChild(nameInput)
         }
 
         $("#btn_load_prev").click(function (e) {
@@ -355,12 +389,12 @@
             btn.style.position='absolute'
             btn.style.width="30px"
             btn.style.height="30px"
-            btn.style.color = "white"
+            btn.style.color = "black"
             btn.style.cursor = "pointer"
 
             btn.style.zIndex= 9999;
             btn.style.top = "-25" + "px"
-            btn.style.right = "-20" + "px"
+            btn.style.right = "-10" + "px"
             btn.setAttribute('x', x);
             btn.setAttribute('y', y);
             btn.setAttribute('w', w);
@@ -371,12 +405,12 @@
             btnDel.style.position='absolute'
             btnDel.style.width="30px"
             btnDel.style.height="30px"
-            btnDel.style.color = "white"
+            btnDel.style.color = "black"
             btnDel.style.cursor = "pointer"
 
             btnDel.style.zIndex= 9999;
             btnDel.style.top = "-25" + "px"
-            btnDel.style.right = "10" + "px"
+            btnDel.style.right = "18" + "px"
 
             btnDel.addEventListener('click', function(e) {
 
@@ -449,8 +483,21 @@
             canvas.style.pointerEvents='none'; //Make sure you can click 'through' the canvas
             context.rect(0, 0, w, h);
 
+            let dummy = document.createElement("div")
+            dummy.style.width="60px";
+            dummy.style.height="30px";
+
+
+            //Position canvas
+            dummy.style.position='absolute';
+            dummy.style.right="-3px";
+            dummy.style.top="-30px";
+            dummy.style.backgroundColor = "white"
+
+
             divv.appendChild(canvas)
             divv.appendChild(btn)
+            divv.appendChild(dummy)
             divv.appendChild(btnDel)
             $(".rcrop-wrapper").append(divv)
 
