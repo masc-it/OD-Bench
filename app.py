@@ -36,8 +36,17 @@ def annotate():
 
 @app.route('/load_img', methods=['POST'])
 def load_img():
+    # blob = request.get_json(force=True)
+
     d_path = request.form['path']
     index = request.form['index']
+    img_width = request.form['w']
+    img_height = request.form['h']
+    name = request.form['name']
+    boxes = request.form['boxes']
+    boxes = json.loads(boxes)
+    if len(boxes) > 0:
+        annotate_utils.save_xml(int(img_width), int(img_height), boxes, name)
 
     return json.dumps(annotate_utils.get_image_base64(d_path, int(index)))
 

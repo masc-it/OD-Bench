@@ -24,7 +24,7 @@
     <script src="static/js/rcrop/rcrop.min.js" ></script>
         <link href="static/js/rcrop/rcrop.min.css" media="screen" rel="stylesheet" type="text/css">
 
-
+<script src="https://kit.fontawesome.com/1dcf3019df.js" crossorigin="anonymous"></script>
     <style>
 #image-4-wrapper .rcrop-outer-wrapper{
     opacity: .25;
@@ -144,13 +144,12 @@
                 </div>
 
 
-
             </form>
 
 
                 <button id="btn_load_prev" type="button" class="btn btn-primary">Prev</button>
 
-                <button id="btn_new_bbox" type="button" class="btn btn-primary">New</button>
+                <button id="btn_new_bbox" type="button" class="btn btn-primary" style="display: none">New</button>
                 <button id="btn_load_next" type="button" class="btn btn-primary">Next</button>
 
 
@@ -175,6 +174,9 @@
 
     let boxes = []
     let imgData = {}
+    let editMode = 0
+    let editedBox = {}
+
     function buildBox(id, x,y, w,h){
 
         return {
@@ -196,46 +198,36 @@
 
         let $image2 = ""
 
+        function loadImg(indx){
 
-        $("#btn_load_prev").click(function (e) {
-            e.preventDefault();
 
-            $.ajax({
-                type: "POST",
-                url: "/apply",
-                data: {
-
-                    w: imgData.w,
-                    h: imgData.h,
-                    name: imgData.name,
-                    boxes: JSON.stringify(boxes)
-
-                },
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                success: function (data) {
-
-                }
-            })
-        })
-
-        $("#btn_load_next").click(function (e) {
-            e.preventDefault();
-
-             num_boxes = 0
-
-             boxes = []
-             imgData = {}
-            i++
+            /*
+             w: imgData == {} ? "0" : imgData.w ,
+                    h: imgData == {} ? "0" : imgData.h,
+                    name: imgData == {} ? "" : imgData.name,
+            */
             $.ajax({
                 type: "POST",
                 url: "/load_img",
+                contentType: "application/x-www-form-urlencoded",
                 data: {
-                    "path": $("#input_images_path").val(),
-                    "index": i,
+                    path: $("#input_images_path").val(),
+                    index: indx,
+                    w: (jQuery.isEmptyObject(imgData) ? "" : imgData.w.toString()) ,
+                    h: (jQuery.isEmptyObject(imgData) ? "" : imgData.h.toString()),
+                    name: (jQuery.isEmptyObject(imgData) ? "" : imgData.name.toString()),
+                    boxes: JSON.stringify(boxes),
 
                 },
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+
                 success: function (data) {
+
+                    num_boxes = 0
+
+                     boxes = []
+                     imgData = {}
+                     editedBox = {}
+                     editMode = false
 
                     imgData = JSON.parse(data)
 
@@ -257,27 +249,92 @@
                     // Initilize
                     $image2.rcrop();
 
-                    let btn = document.createElement("button")
-                    btn.textContent = "Confirm"
-                    btn.style.position='absolute';
+                    setupCanvas()
 
-                    btn.style.zIndex= 99999;
-                    btn.style.top = "-30" + "px"
-                    btn.style.left = "0" + "px"
-                    btn.addEventListener('click', function(e) {
-
-                        canvasCallback()
-                    })
-                    document.getElementsByClassName("rcrop-handler-wrapper")[0].appendChild(btn)
-                    // Fill inputs when Responsive Cropper is ready and when crop area is being resized or dragged
                     //$image2.on('rcrop-changed', canvasCallback);
-
 
                 }
             });
+        }
+
+        function setupCanvas(){
+            let btn = document.createElement("span")
+                    btn.className = "fas fa-check-circle"
+                    btn.style.position='absolute'
+                    btn.style.width="30px"
+                    btn.style.height="30px"
+                    btn.style.color = "white"
+                    btn.style.cursor = "pointer"
+                    btn.style.zIndex= 99999;
+                    btn.style.top = "-25" + "px"
+                    btn.style.left = "0" + "px"
+                    btn.addEventListener('click', function(e) {
+
+                        if ( editMode){
+                            canvasCallbackEdit()
+                            editMode = false
+                            editedBox = {}
+                        } else {
+                            canvasCallback()
+
+                        }
+                    })
+                    document.getElementsByClassName("rcrop-handler-wrapper")[0].appendChild(btn)
+        }
+
+        $("#btn_load_prev").click(function (e) {
+            e.preventDefault();
+
+            if ( i > 0)
+                loadImg(--i)
+
+            /*$.ajax({
+                type: "POST",
+                url: "/apply",
+                data: {
+
+                    w: imgData.w,
+                    h: imgData.h,
+                    name: imgData.name,
+                    boxes: JSON.stringify(boxes)
+
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                }
+            })*/
+        })
+
+
+        $("#btn_load_next").click(function (e) {
+            e.preventDefault();
+
+            loadImg(++i)
 
 
         });
+
+        function canvasCallbackEdit(){
+
+            let values = $image2.rcrop('getValues');
+
+            editedBox.x_min = values.x
+            editedBox.y_min = values.y
+            editedBox.x_max = values.width + values.x
+            editedBox.y_max = values.height + values.y
+
+             for (let [i, box] of boxes.entries()) {
+                 if (box.id == editedBox.id) {
+                     box = editedBox
+                     break
+                 }
+             }
+
+             createCanvas(values.x, values.y, values.width, values.height, editedBox.id)
+
+            //console.log(boxes)
+        }
 
         function canvasCallback(){
             let values = $image2.rcrop('getValues');
@@ -285,25 +342,57 @@
             boxes.push(buildBox(num_boxes, values.x, values.y, values.width, values.height))
 
              createCanvas(values.x, values.y, values.width, values.height, num_boxes++)
-
-            console.log(boxes)
+            //console.log(boxes)
         }
         $("#btn_new_bbox").click(function (e) {
             e.preventDefault();
             canvasCallback()
         })
+
         function createCanvas(x,y,w,h, indx){
-            let btn = document.createElement("button")
-            btn.textContent = "edit"
-            btn.style.position='absolute';
+            let btn = document.createElement("span")
+            btn.className = "fas fa-pen"
+            btn.style.position='absolute'
+            btn.style.width="30px"
+            btn.style.height="30px"
+            btn.style.color = "white"
+            btn.style.cursor = "pointer"
 
             btn.style.zIndex= 9999;
-            btn.style.top = "-30" + "px"
-            btn.style.left = "0" + "px"
+            btn.style.top = "-25" + "px"
+            btn.style.right = "-20" + "px"
             btn.setAttribute('x', x);
             btn.setAttribute('y', y);
             btn.setAttribute('w', w);
             btn.setAttribute('h', h);
+
+            let btnDel = document.createElement("span")
+            btnDel.className = "fas fa-trash"
+            btnDel.style.position='absolute'
+            btnDel.style.width="30px"
+            btnDel.style.height="30px"
+            btnDel.style.color = "white"
+            btnDel.style.cursor = "pointer"
+
+            btnDel.style.zIndex= 9999;
+            btnDel.style.top = "-25" + "px"
+            btnDel.style.right = "10" + "px"
+
+            btnDel.addEventListener('click', function(e) {
+
+                console.log(this.parentElement.id.split("_")[2])
+
+                for (let [i, box] of boxes.entries()) {
+                    if (box.id == this.parentElement.id.split("_")[2]) {
+                        boxes.splice(i, 1)
+                        break
+                    }
+                 }
+
+                this.parentElement.remove()
+
+
+            }, false);
 
             var divv = document.createElement("div")
             divv.id = "c_overlay_" + indx
@@ -319,25 +408,25 @@
             //divv.style.zIndex= 9999;
             btn.addEventListener('click', function(e) {
 
-                console.log(boxes)
+                editMode = true
+
+                //console.log(boxes)
                 //let canv = this.firstChild;
 
                 $image2.rcrop('resize', this.getAttribute("w"), this.getAttribute("h"), this.getAttribute("x"), this.getAttribute("y"));
 
-
-                for (let [i, user] of boxes.entries()) {
-                    if (user.id == this.parentElement.id.split("_")[2]) {
-                        boxes.splice(i, 1);
+                for (let [i, box] of boxes.entries()) {
+                    if (box.id == this.parentElement.id.split("_")[2]) {
+                        editedBox = box
                         break
                     }
                  }
 
-                console.log(boxes)
-
                 this.parentElement.remove()
-                //boxes.splice(parseInt(this.id.split("_")[1]), 1)
+
 
             }, false);
+
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
             context.globalAlpha = 0.7;
@@ -352,28 +441,25 @@
 
             //Position canvas
             canvas.style.position='absolute';
-            canvas.style.left=0 + "px";
-            canvas.style.top=0+ "px";
-            //canvas.style.zIndex="999";
-            canvas.style.border = "solid 1px black"
+            canvas.style.paddingLeft=0 + "px";
+            canvas.style.paddingTop=0+ "px";
+
+            canvas.style.outline = "solid 3px white"
+
             canvas.style.pointerEvents='none'; //Make sure you can click 'through' the canvas
             context.rect(0, 0, w, h);
-            //context.fillStyle = 'yellow';
 
-            drawBorder(context, 0, 0, w, h)
-            //context.fill();
-
-            divv.appendChild(btn)
             divv.appendChild(canvas)
-
+            divv.appendChild(btn)
+            divv.appendChild(btnDel)
             $(".rcrop-wrapper").append(divv)
 
 
         }
-        function drawBorder(ctx, xPos, yPos, width, height, thickness = 1)
+        function drawBorder(ctx, xPos, yPos, width, height, thickness = 100)
         {
-          ctx.fillStyle='#00000000';
-          ctx.fillRect(xPos - (thickness), yPos - (thickness), width + (thickness * 2), height + (thickness * 2));
+          //ctx.fillStyle='#00000000';
+          //ctx.fillRect(xPos + (thickness), yPos + (thickness), width + (thickness ), height - (thickness ));
         }
     })
 

@@ -1,6 +1,6 @@
 import base64
 import glob
-
+import os
 import cv2
 import jinja2
 
@@ -38,6 +38,6 @@ def save_xml(w, h, boxes, name):
     TEMPLATE_FILE = "templ.xml"
     template = templateEnv.get_template(TEMPLATE_FILE)
     out = template.render(width=w, height=h, boxes=boxes, name=name)
-    with open("my_new_file.xml", "w") as fh:
+    with open("%s.xml" % (os.path.basename(name)), "w") as fh:
         fh.write(out)
         fh.close()
