@@ -1,3 +1,5 @@
+# Author: mascIT
+
 from flask import Flask, render_template, request
 
 import utils.xml_utils as xml_to_yolo

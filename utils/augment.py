@@ -1,3 +1,5 @@
+# Author: mascIT
+
 import cv2
 import numpy as np
 import utils.xml_utils as xml_utils

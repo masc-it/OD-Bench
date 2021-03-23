@@ -1,3 +1,5 @@
+# Author: mascIT
+
 from copy import deepcopy
 
 
@@ -29,7 +31,6 @@ def convert_yolo_coordinates_to_voc(x_c_n, y_c_n, width_n, height_n, img_width, 
     half_width = width / 2
     half_height = height / 2
     # compute left, top, right, bottom
-    # in the official VOC challenge the top-left pixel in the image has coordinates (1;1)
     left = int(x_c - half_width)
     top = int(y_c - half_height)
     right = int(x_c + half_width)
