@@ -12,3 +12,5 @@ It can parse annotations in VOC XML format only. (atm)
 ## Setup
 - _pip install -r requirements.txt_
 - _python app.py_
+
+![](https://i.ibb.co/QQ2jdpn/Cattura.png)
