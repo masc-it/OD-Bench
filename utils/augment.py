@@ -105,21 +105,6 @@ def get_enclosing_box(corners, width, height):
 
     final = np.hstack((xmin, ymin, xmax, ymax, corners[:, 8:])).reshape(-1)
 
-    # for i in range(0, 4):
-    #     if (i == 0 or i == 2) and final[i] >= width:
-    #         final[i] = width - 1
-    #         continue
-    #     if (i == 0 or i == 2) and final[i] <= 0:
-    #         final[i] = 1
-    #         continue
-    #     if (i == 1 or i == 3) and final[i] >= height:
-    #         final[i] = height - 1
-    #         continue
-    #
-    #     if (i == 1 or i == 3) and final[i] <= 0:
-    #         final[i] = 1
-    #         continue
-
     return final
 
 
