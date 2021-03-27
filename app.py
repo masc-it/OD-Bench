@@ -8,6 +8,8 @@ import utils.annotate_utils as annotate_utils
 
 import json
 
+from utils.augmentation import Augmentation
+
 app = Flask(__name__, static_url_path='/static')
 
 
@@ -78,7 +80,10 @@ def do_augmentation():
     if resize != "":
         new_size = list(map(lambda x: int(x), resize.split(",")))
 
-    augment.run_aug(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
+    # augment.run_aug(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
+
+    aug = Augmentation(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
+
     return "ok"
 
 

@@ -124,7 +124,6 @@ def get_enclosing_box(corners, width, height):
 
 
 def _rotate_save(img_path, out_path, angle, size):
-
     img = cv2.imread(img_path)
     img_rot = rotate_image2(img, angle)
     rot_h, rot_w = img_rot.shape[:2]
@@ -139,10 +138,71 @@ def _resize_save(img_path, out_path, width, height):
     cv2.imwrite(out_path, resized_image)
 
 
+def _downscale_with_padding(img_path, out_path, down_width, down_height):
+    img = cv2.imread(img_path)
+    ht, wd, cc = img.shape
+
+    ww = down_width
+    hh = down_height
+    averageR = img.mean(axis=0).mean(axis=0)
+
+    color = (averageR[0], averageR[1], averageR[2])
+    result = np.full((ht, wd, cc), color, dtype=np.uint8)
+
+    # compute center offset
+    offset_x = abs(wd - ww) // 2
+    offset_y = abs(ht - hh) // 2
+
+    # copy img image into center of result image
+    result[offset_y:ht - offset_y, offset_x:wd - offset_x] = cv2.resize(img, (hh, ww))
+
+    cv2.imwrite(out_path, result)
+    return offset_x, offset_y
+
+
+def downscale_with_padding2(xml_tree, img_path, out_path, labels_out, boxes, new_size, down_size):
+    xml_tree = deepcopy(xml_tree)
+    xml_root = xml_tree.getroot()
+    offset_x, offset_y = _downscale_with_padding(img_path, out_path, down_size[0], down_size[1])
+
+    for i, obj in enumerate(xml_root.iter('object')):
+        xmlbox = obj.find('bndbox')
+        box = deepcopy(boxes[i])
+        box[1], box[2] = box[2], box[1]
+
+        b = resize.resize_bbox(box, new_size, (down_size[0], down_size[1]))
+        b[0] = b[0] + offset_x
+        b[1] = b[1] + offset_x
+
+        b[2] = b[2] + offset_y
+        b[3] = b[3] + offset_y
+
+        xmlbox.find('xmin').text = str(int(b[0]))
+        xmlbox.find('ymin').text = str(int(b[2]))
+        xmlbox.find('xmax').text = str(int(b[1]))
+        xmlbox.find('ymax').text = str(int(b[3]))
+
+    xml_tree.write(labels_out)
+
+
+def _build_path(name, ext):
+    return name + ext
+
+
 def run_aug(dataset_path, angles, ops, new_size=None):
     cwd = dataset_path
 
     angles.append(0)
+
+    do_downscale = False
+    wh = 0
+
+    for op in ops:
+        if op["op"] == "downscale":
+            do_downscale = True
+            # downscale with, height
+            wh = op["val"].split(",")
+            break
 
     for folder in ['train', 'test']:
         labels_path = cwd + '/' + folder + "/labels/"
@@ -169,7 +229,7 @@ def run_aug(dataset_path, angles, ops, new_size=None):
 
             xml_root = xml_tree.getroot()
 
-            img_path = imgs_path + os.path.splitext(os.path.basename(label))[0] + ".jpg"
+            img_path = _build_path(imgs_path + os.path.splitext(os.path.basename(label))[0], ".jpg")
             print(img_path)
             size = xml_root.find('size')
             xml_root_copy = deepcopy(xml_root)
@@ -177,28 +237,32 @@ def run_aug(dataset_path, angles, ops, new_size=None):
             w_orig = int(size.find('width').text)
             h_orig = int(size.find('height').text)
 
+            # output image path
+            out_img_orig = _build_path(out_path + os.path.splitext(os.path.basename(label))[0], ".jpg")
+            out_label_orig = _build_path(labels_out + os.path.splitext(os.path.basename(label))[0], ".xml")
+
             if new_size is not None:
                 size.find('width').text = str(new_size[0])
                 size.find('height').text = str(new_size[1])
-                _resize_save(img_path, out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg", new_size[0], new_size[1])
+                _resize_save(img_path, out_img_orig, new_size[0],
+                             new_size[1])
             else:
-                _resize_save(img_path, out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg", w_orig, h_orig)
-                # copy labels to out
-
-            # xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + ".xml")
+                _resize_save(img_path, out_img_orig, w_orig, h_orig)
 
             w = int(size.find('width').text)
             h = int(size.find('height').text)
 
-            xml_tree_0_deg = ""
-
             for a in angles:
+
+                out_img_angle = _build_path(out_path + os.path.splitext(os.path.basename(label))[0] + "_%d_aug" % a,
+                                            ".jpg")
+                out_label_angle = _build_path(out_path + os.path.splitext(os.path.basename(label))[0] + "_%d_aug" % a,
+                                              ".xml")
 
                 rot_h, rot_w = 0, 0
                 # apply image rotation and save
                 if a != 0:
-                    rot_h, rot_w = _rotate_save(out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg", out_path + os.path.splitext(os.path.basename(label))[0] + "_%d_aug.jpg" % a, int(a), (w,h))
-                # apply bbox rotation
+                    rot_h, rot_w = _rotate_save(out_img_orig, out_img_angle, int(a), (w, h))
 
                 boxes = []
                 for obj in xml_root_copy.iter('object'):
@@ -224,9 +288,28 @@ def run_aug(dataset_path, angles, ops, new_size=None):
                         scale_factor_y = rot_h / h
 
                         new_bboxes /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y]
-                        boxes.append(new_bboxes)
+
                     else:
-                        boxes.append([b[0], b[2], b[1], b[3]])
+                        new_bboxes = [b[0], b[2], b[1], b[3]]
+
+                    boxes.append(new_bboxes)
+
+                if do_downscale:
+                    out_img_angle_path = out_img_angle
+
+                    if a == 0:
+                        out_img_angle_path = out_img_orig
+
+                    downscale_with_padding2(xml_tree,
+                                            out_img_angle_path,
+                                            out_path + os.path.splitext(os.path.basename(label))[
+                                                0] + "_%d_down_aug.jpg" % int(a),
+                                            labels_out + os.path.splitext(os.path.basename(label))[
+                                                0] + "_%d_down_aug.xml" % int(a),
+                                            boxes,
+                                            (w, h),
+                                            (int(wh[0]), int(wh[1]))
+                                            )
 
                 for i, obj in enumerate(xml_root.iter('object')):
                     new_bboxes = boxes[i]
@@ -238,23 +321,29 @@ def run_aug(dataset_path, angles, ops, new_size=None):
 
                     # save changes to new .xml
                 if a != 0:
-                    xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + "_%d_aug.xml" % a)
+                    xml_tree.write(out_label_angle)
                 else:
+                    # save original image labels (just resized)
+                    xml_tree.write(out_label_orig)
 
-                    xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + ".xml")
+                    img = cv2.imread(out_img_orig)
 
-                    img = cv2.imread(out_path + os.path.splitext(os.path.basename(label))[0] + ".jpg")
+                    # color augmentation, just for orig image (not rotated)
                     for op in ops:
-                        if int(op["val"]) != 0:
-                            # laziness mode on, we DO NOT care about security here
+                        if "apply" in op["op"] and int(op["val"]) != 0:
+                            # laziness mode on, we DO NOT care about security here :D
                             out = eval(op["op"])(img, int(op["val"]))
-                            cv2.imwrite(out_path + os.path.splitext(os.path.basename(label))[0] + "_%s_%s_aug.jpg" % (op["op"].split("_")[1], op["val"]), out)
-                        xml_tree.write(labels_out + os.path.splitext(os.path.basename(label))[0] + "_%s_%s_aug.xml" % (op["op"].split("_")[1], op["val"]))
+
+                            cv2.imwrite(out_path + os.path.splitext(os.path.basename(label))[0] + "_%s_%s_aug.jpg" % (
+                                op["op"].split("_")[1], op["val"]), out)
+
+                            xml_tree.write(
+                                labels_out + os.path.splitext(os.path.basename(label))[0] + "_%s_%s_aug.xml" % (
+                                    op["op"].split("_")[1], op["val"]))
 
 
 # https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv
 def apply_contrast(input_img, contrast=0):
-
     buf = input_img.copy()
     if contrast != 0:
         f = 131 * (contrast + 127) / (127 * (131 - contrast))
@@ -310,21 +399,18 @@ def apply_hue(input_img, hue):
 
 
 def apply_red(input_img, red):
-
     img = input_img.copy()
     img[:, :, 0] = red
     return img
 
 
 def apply_blue(input_img, blue):
-
     img = input_img.copy()
     img[:, :, 2] = blue
     return img
 
 
 def apply_green(input_img, green):
-
     img = input_img.copy()
     img[:, :, 1] = green
     return img
@@ -344,7 +430,7 @@ def preview_img(img_path, ops):
             jpg_as_text = base64.b64encode(buffer)
             res = dict()
             res["name"] = op["op"].split("_")[1] + "_" + op["val"]
-            res["val"] = jpg_as_text.decode('utf-8') # get as string
+            res["val"] = jpg_as_text.decode('utf-8')  # get as string
             results.append(res)
 
     return results
