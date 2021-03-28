@@ -83,20 +83,22 @@
 
                 <div class="form-group">
                     <label for="input_angles">Angles (comma separated)</label>
-                    <input type="text" class="form-control" id="input_angles" placeholder="Angles">
+                    <input type="text" class="form-control" id="input_angles" placeholder="10,-10,30,195">
 
                 </div>
 
-                <div class="form-check">
+                <div class="form-check" style="display: none">
                     <input type="checkbox" class="form-check-input" id="input_resize">
                     <label class="form-check-label" for="input_resize">Resize boxes</label>
                 </div>
-                <div id="resize_container" class="form-group" style="display: none">
+                <div id="resize_container" class="form-group">
 
                     <div class="row">
-
-
+                        <div class="col-sm-12">
+                            <label class="form-check-label" for="input_resize_width">Resize boxes</label>
+                        </div>
                         <div class="col-sm-6">
+
                             <input type="text" class="form-control" id="input_resize_width" placeholder="width" value="300">
 
                         </div>
@@ -136,7 +138,8 @@
                                 <option data-id="apply_red">Red</option>
                                 <option data-id="apply_blue">Blue</option>
                                 <option data-id="apply_green">Green</option>
-
+                                <option data-id="apply_hist">Hist eq</option>
+                                <option data-id="apply_gamma">Gamma correction</option>
                             </select>
                         </div>
                         <div class="col-sm-6">
@@ -146,8 +149,15 @@
                         </div>
 
                     </div>
-                        <button id="btn_augmentation_add" type="button" class="btn btn-primary">Add</button>
+                     <div class="form-group" style="padding-top: 10px" >
 
+                         <div class="row">
+                            <div class="col-sm-6">
+                                <button id="btn_augmentation_add" type="button" class="btn btn-primary">Add</button>
+
+                            </div>
+                         </div>
+                     </div>
                         <p id="aug_pipeline"></p>
 
                     <div class="row" style="display: none">
@@ -166,10 +176,36 @@
 
                 </div>
 
+                    <div class="form-group" style="padding-top: 10px" >
 
-                <button id="btn_preview" type="button" class="btn btn-primary">Preview</button>
+                         <div class="row">
+                            <div class="col-sm-2">
+                                <button id="btn_preview" type="button" class="btn btn-primary" >Preview</button>
+                            </div>
+                             <div class="col-sm-2">
+                                <button id="btn_load_info" type="button" class="btn btn-primary">Apply</button>
+                            </div>
+                        </div>
+                    </div>
 
-                <button id="btn_load_info" type="button" class="btn btn-primary">Apply</button>
+                 <div class="row">
+
+                        <div class="col-sm-6">
+
+                            <ul id="ul_pipeline">
+
+
+                            </ul>
+
+                        </div>
+
+                 </div>
+                <!--<div class="row">
+
+                        <div class="col-sm-6">
+                            <button id="btn_load_info" type="button" class="btn btn-primary">Apply</button>
+                        </div>
+                </div>-->
 
             </form>
                 </div>
@@ -193,9 +229,13 @@
 <!-- Menu Toggle Script -->
 <script>
     let aug_pipeline = {
-              "ops": [
 
-              ]
+        "path" : "",
+        "angles": "",
+        "resize": "",
+          "ops": [
+
+          ]
 
             }
 
@@ -222,25 +262,62 @@
             }
 
         })
+
+        $("#input_aug_val").on('keypress',function(e) {
+            if(e.which === 13) {
+               $("#btn_augmentation_add").click()
+            }
+        });
+
+        $("#input_aug_val").on('input',function(e) {
+
+            if ($(this).val() == "")
+                updatePlaceholder()
+
+        });
+
+        function updatePlaceholder(){
+            $("#input_aug_val").val("")
+
+            let op = $("#select_aug").find(":selected").data("id")
+            if (op.includes("apply")){
+                $("#input_aug_val").attr("placeholder", "0-255")
+            }
+
+            if (op.includes("downscale")){
+                $("#input_aug_val").attr("placeholder", "width,height")
+            }
+        }
+        $("#select_aug").change(function () {
+
+            updatePlaceholder()
+
+        })
+
+        function updatePipeline(){
+            let resize_size = ""
+
+            //if ($("#input_resize").is(":checked")) {
+            resize_size = $("#input_resize_width").val() + "," + $("#input_resize_height").val()
+            //}
+
+            aug_pipeline["path"] =  $("#input_xml_path").val()
+            aug_pipeline["angles"] = $("#input_angles").val()
+            aug_pipeline["resize"] = resize_size
+        }
+
+
         $("#btn_load_info").click(function (e) {
             e.preventDefault();
 
-            let resize_size = ""
-
-            if ($("#input_resize").is(":checked")) {
-                resize_size = $("#input_resize_width").val() + "," + $("#input_resize_height").val()
-            }
-
-
+            updatePipeline()
 
             $.ajax({
                 type: "POST",
                 url: "/do_augmentation",
                 data: {
-                    "path": $("#input_xml_path").val(),
-                    "angles": $("#input_angles").val(),
-                    "resize" : resize_size,
-                    "ops": JSON.stringify(aug_pipeline),
+                    "payload" : JSON.stringify(aug_pipeline),
+
                 },
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 success: function (data) {
@@ -256,21 +333,68 @@
          $("#btn_augmentation_add").click(function (e) {
              e.preventDefault();
 
-             aug_pipeline["ops"].push(add_aug($('#select_aug').find(":selected").data("id"), $("#input_aug_val").val()))
+             updatePipeline()
 
-             $("#aug_pipeline").text(JSON.stringify(aug_pipeline))
+             let ok = false
+             let ops = aug_pipeline["ops"]
+             let newOp = $('#select_aug').find(":selected").data("id")
+             let newVal = $("#input_aug_val").val()
 
+             let len = aug_pipeline.ops.length
+             for ( let x=0; x < len ; x++ ) {
+                let item = ops[x];
+
+                console.log(ops)
+                 if (newOp === item["op"]){
+                     item.val = newVal
+
+                     if ( newVal === ""){
+                         // remove object
+                         aug_pipeline["ops"].splice(x, 1)
+
+                     }
+
+                     ok = true
+                 }
+             }
+
+             if (!ok)
+                aug_pipeline["ops"].push(add_aug(newOp, newVal))
+
+
+             showPipeline()
          })
+
+
+        function showPipeline(){
+
+             $("#ul_pipeline").html("")
+             let ops = aug_pipeline["ops"]
+             for (var key of Object.keys(ops)) {
+
+                //console.log(key + " -> " + ops[key])
+
+                 let div = document.createElement("div")
+                 let li = document.createElement("li")
+
+                 div.appendChild(li)
+                 li.innerText = ops[key]["op"] + " -> " + ops[key]["val"]
+
+                 $("#ul_pipeline").append(div)
+            }
+
+        }
 
         $("#btn_preview").click(function (e) {
             e.preventDefault();
 
 
+            updatePipeline()
             $.ajax({
                 type: "POST",
                 url: "/preview_augmentation",
                 data: {
-                    "ops": JSON.stringify(aug_pipeline),
+                    "payload": JSON.stringify(aug_pipeline),
                     "img": $("#input_preview_img").val(),
 
                 },

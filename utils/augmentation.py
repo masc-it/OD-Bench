@@ -14,10 +14,17 @@ from utils.augment import *
 
 class Downscale(object):
 
-    path_suffix = "_down_aug"
-
     def __init__(self, target_size):
         self.target_size = target_size
+
+
+class Color(object):
+
+    def __init__(self, ops):
+        self.ops = []
+        for op in ops:
+            if "apply" in op["op"] and op["val"] != "":
+                self.ops.append(op)
 
 
 class PathUtil(object):
@@ -221,15 +228,22 @@ class ImageInfo(object):
             out_img_angle_path, _ = self.get_aug_angle_path(a)
 
         imgg = cv2.imread(out_img_angle_path)
-        if "apply" in op["op"] and int(op["val"]) != 0:
-            # we DO NOT care about security here :D
-            out = eval(op["op"])(imgg, int(op["val"]))
+        if "apply" in op["op"]:
+            if "," not in op["val"] and op["val"] != "":
+                out = eval(op["op"])(imgg, float(op["val"]))
+                img_out_color, label_out_color = self.get_aug_color_path(op["op"].split("_")[1], op["val"], a)
+                cv2.imwrite(img_out_color, out)
+                self.xml_tree.write(label_out_color)
+            else:
+                values = op["val"].split(",")
 
-            img_out_color, label_out_color = self.get_aug_color_path(op["op"].split("_")[1], op["val"], a)
+                for val in values:
+                    out = eval(op["op"])(imgg, float(val))
+                    img_out_color, label_out_color = self.get_aug_color_path(op["op"].split("_")[1], val, a)
 
-            cv2.imwrite(img_out_color, out)
+                    cv2.imwrite(img_out_color, out)
 
-            self.xml_tree.write(label_out_color)
+                    self.xml_tree.write(label_out_color)
 
 
 class Augmentation(object):
@@ -242,6 +256,7 @@ class Augmentation(object):
 
         self.angles.append(0)
         self.downscale = self._setup_downscale()
+        self.colors = self._setup_colors()
 
         folders = ["train", "test"]
         self._setup_folders(folders, clean_out_folders=True)
@@ -260,6 +275,14 @@ class Augmentation(object):
                 return Downscale(wh)
 
         return None
+
+    def _setup_colors(self):
+
+        c = Color(self.ops)
+        if len(c.ops) > 0:
+            return c
+        else:
+            return None
 
     def _setup_folders(self, subdirs, clean_out_folders=False):
 
@@ -310,6 +333,7 @@ class Augmentation(object):
                     img.downscale_with_padding(self.downscale.target_size, a)
 
                 # color augmentation
-                for op in self.ops:
-                    img.color_aug(op, a)
+                if self.colors is not None:
+                    for op in self.colors.ops:
+                        img.color_aug(op, a)
 

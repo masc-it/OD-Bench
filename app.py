@@ -69,33 +69,39 @@ def apply():
 
 @app.route('/do_augmentation', methods=['POST'])
 def do_augmentation():
-    d_path = request.form['path']
-    angles = request.form['angles']
-    resize = request.form['resize']
-    ops = request.form['ops']
 
-    operations = json.loads(ops)["ops"]
+    _pipeline = request.form['payload']
+    pipeline = json.loads(_pipeline)
+
+    d_path = pipeline["path"]
+    angles = pipeline["angles"]
+    resize = pipeline["resize"]
+
+    operations = pipeline["ops"]
 
     new_size = None
     if resize != "":
         new_size = list(map(lambda x: int(x), resize.split(",")))
 
-    # augment.run_aug(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
-
-    aug = Augmentation(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
+    Augmentation(d_path, list(map(lambda x: int(x), angles.split(","))), operations, new_size)
 
     return "ok"
 
 
 @app.route('/preview_augmentation', methods=['POST'])
 def preview_augmentation():
-    ops = request.form['ops']
+    _pipeline = request.form['payload']
+    pipeline = json.loads(_pipeline)
 
+    operations = pipeline["ops"]
+    resize = pipeline["resize"]
     img = request.form['img']
+    angles = pipeline["angles"]
 
-    operations = json.loads(ops)["ops"]
+    new_size = list(map(lambda x: int(x), resize.split(",")))
+    angles = list(map(lambda x: int(x), angles.split(",")))
 
-    imgs = augment.preview_img(img, operations)
+    imgs = augment.preview_img(img, operations, new_size, angles)
 
     return json.dumps(imgs)
 

@@ -117,6 +117,14 @@ def _rotate_save(img_path, out_path, angle, size):
     return rot_h, rot_w
 
 
+def _get_rotated_img(img, angle, size):
+
+    img_rot = rotate_image2(img, angle)
+    img_rot = cv2.resize(img_rot, size)
+
+    return img_rot
+
+
 def _resize_save(img_path, out_path, width, height):
     img = cv2.imread(img_path)
     resized_image = cv2.resize(img, (width, height))
@@ -143,6 +151,29 @@ def _downscale_with_padding(img_path, out_path, down_width, down_height):
 
     cv2.imwrite(out_path, result)
     return offset_x, offset_y
+
+
+def _get_downscale_with_padding(img, down_width, down_height, resize):
+    # img = cv2.imread(img_path)
+    ht, wd, cc = img.shape
+    # minv = min([ht, wd])
+    img = cv2.resize(img, resize)
+    ht, wd, cc = img.shape
+    ww = down_width
+    hh = down_height
+    averageR = img.mean(axis=0).mean(axis=0)
+
+    color = (averageR[0], averageR[1], averageR[2])
+    result = np.full((ht, wd, cc), color, dtype=np.uint8)
+
+    # compute center offset
+    offset_x = abs(wd - ww) // 2
+    offset_y = abs(ht - hh) // 2
+
+    # copy img image into center of result image
+    result[offset_y:ht - offset_y, offset_x:wd - offset_x] = cv2.resize(img, (hh, ww))
+
+    return result
 
 
 def downscale_with_padding2(xml_tree, img_path, out_path, labels_out, boxes, new_size, down_size):
@@ -401,21 +432,77 @@ def apply_green(input_img, green):
     return img
 
 
-# https://stackoverflow.com/questions/40928205/python-opencv-image-to-byte-string-for-json-transfer
-def preview_img(img_path, ops):
-    img = cv2.imread(img_path)
+def apply_hist(input_img, dummy):
+    ycrcb_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2YCrCb)
 
+    # equalize the histogram of the Y channel
+    ycrcb_img[:, :, 0] = cv2.equalizeHist(ycrcb_img[:, :, 0])
+
+    # convert back to RGB color-space from YCrCb
+    return cv2.cvtColor(ycrcb_img, cv2.COLOR_YCrCb2BGR)
+
+
+def apply_gamma(image, gamma):
+    # build a lookup table mapping the pixel values [0, 255] to
+    # their adjusted gamma values
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+        for i in np.arange(0, 256)]).astype("uint8")
+    # apply gamma correction using the lookup table
+    return cv2.LUT(image, table)
+
+
+# https://stackoverflow.com/questions/40928205/python-opencv-image-to-byte-string-for-json-transfer
+def preview_img(img_path, ops, resize, angles):
+    img = cv2.imread(img_path)
     results = []
     for op in ops:
-        if int(op["val"]) != 0:
-            # laziness mode on, we DO NOT care about security here
-            out = eval(op["op"])(img, int(op["val"]))
 
+        res = dict()
+        if op["op"] != "downscale":
+            # we DO NOT care about security here :D
+            if "," not in op["val"]:
+                out = eval(op["op"])(img, float(op["val"]))
+
+                retval, buffer = cv2.imencode('.jpg', out)
+                jpg_as_text = base64.b64encode(buffer)
+
+                res["name"] = op["op"].split("_")[1] + "_" + op["val"]
+                res["val"] = jpg_as_text.decode('utf-8')  # get as string
+                results.append(res)
+            else:
+                values = op["val"].split(",")
+
+                for val in values:
+                    res = dict()
+                    out = eval(op["op"])(img, float(val))
+
+                    retval, buffer = cv2.imencode('.jpg', out)
+                    jpg_as_text = base64.b64encode(buffer)
+
+                    res["name"] = op["op"].split("_")[1] + "_" + val
+                    res["val"] = jpg_as_text.decode('utf-8')  # get as string
+
+                    results.append(res)
+
+        if op["op"] == "downscale":
+            wh = op["val"].split(",")
+            out = _get_downscale_with_padding(img, int(wh[0]), int(wh[1]), (resize[0], resize[1]))
             retval, buffer = cv2.imencode('.jpg', out)
             jpg_as_text = base64.b64encode(buffer)
-            res = dict()
-            res["name"] = op["op"].split("_")[1] + "_" + op["val"]
+
+            res["name"] = "downscale_" + op["val"]
             res["val"] = jpg_as_text.decode('utf-8')  # get as string
+
             results.append(res)
 
+    for a in angles:
+        res = dict()
+        out = _get_rotated_img(img, a, (resize[0], resize[1]))
+        retval, buffer = cv2.imencode('.jpg', out)
+        jpg_as_text = base64.b64encode(buffer)
+
+        res["name"] = "rotate_%d" % a
+        res["val"] = jpg_as_text.decode('utf-8')  # get as string
+        results.append(res)
     return results
