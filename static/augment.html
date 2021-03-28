@@ -16,6 +16,12 @@
     <!-- Custom styles for this template -->
     <link href="static/css/simple-sidebar.css" rel="stylesheet">
 
+
+    <style>
+        div.imagetiles div{
+            padding: 0px;
+            }
+    </style>
 </head>
 
 <body>
@@ -74,6 +80,22 @@
             <h1 class="mt-4">Augmentation</h1>
 
             <form id="form_load_xml">
+
+                <div class="form-group">
+                    <label for="input_pipeline_path">Pipeline</label>
+                    <input type="text" class="form-control" id="input_pipeline_path" placeholder="Pipeline" value="F:\datasets\people\people_1\aug_pipeline.json">
+
+                </div>
+                <div class="form-group" style="padding-top: 10px" >
+
+                         <div class="row">
+                            <div class="col-sm-12">
+                                <button id="btn_load_pipeline" type="button" class="btn btn-primary" >Load</button>
+                                <button id="btn_save_pipeline" type="button" class="btn btn-primary">Save</button>
+                            </div>
+
+                        </div>
+                    </div>
 
                 <div class="form-group">
                     <label for="input_xml_path">Dataset root directory</label>
@@ -210,11 +232,11 @@
             </form>
                 </div>
 
+
+            </div>
                 <div id="previews">
 
                     </div>
-            </div>
-
         </div>
     </div>
 
@@ -292,6 +314,22 @@
 
             updatePlaceholder()
 
+            let ops = aug_pipeline["ops"]
+             let newOp = $(this).find(":selected").data("id")
+
+            // show value if already exists
+             let len = aug_pipeline.ops.length
+             for ( let x=0; x < len ; x++ ) {
+                let item = ops[x];
+
+                 if (newOp === item["op"]){
+
+                     $("#input_aug_val").val(item["val"])
+                     break
+                 }
+             }
+
+
         })
 
         function updatePipeline(){
@@ -323,6 +361,59 @@
                 success: function (data) {
 
                     console.log(data)
+
+                }
+            });
+
+
+        });
+
+        $("#btn_save_pipeline").click(function (e) {
+            e.preventDefault();
+
+            updatePipeline()
+
+            $.ajax({
+                type: "POST",
+                url: "/save_pipeline",
+                data: {
+                    "pipeline" : JSON.stringify(aug_pipeline),
+                    "path": $("#input_pipeline_path").val()
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                    alert("pipeline saved!")
+
+                }
+            });
+
+
+        });
+
+        $("#btn_load_pipeline").click(function (e) {
+            e.preventDefault();
+
+            updatePipeline()
+
+            $.ajax({
+                type: "POST",
+                url: "/load_pipeline",
+                data: {
+                    "path": $("#input_pipeline_path").val()
+                },
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                success: function (data) {
+
+                    aug_pipeline = JSON.parse(data)
+                    $("#input_xml_path").val(aug_pipeline.path)
+                    $("#input_angles").val(aug_pipeline.angles)
+                    $("#input_resize_width").val(aug_pipeline.resize.split(",")[0])
+                    $("#input_resize_height").val(aug_pipeline.resize.split(",")[1])
+
+
+                    showPipeline()
+                    $("#select_aug").trigger("change")
 
                 }
             });
@@ -403,21 +494,39 @@
 
                     let res = JSON.parse(data)
                     $("#previews").html("")
-                    res.forEach((item) => {
 
-                        $("#previews").append(
+                    let len = res.length
 
-                            "<div class=\"col-sm-12\">" +
-                            "<p>" + item.name + "</p>"+
-                            "<img src=\"data:image/png;base64," + item.val.trim() + "\" >" +
-                            "</div>"
 
-                        )
-                      //console.log('ID: ' + item.name);
-                     // console.log('MSG: ' + item.val);
+                    let imgrow = document.createElement("div")
+                        imgrow.className = "row imagetiles"
 
-                    });
-                    //$("#img_preview").attr('src', 'data:image/png;base64,' + data)
+
+                    for ( let x=0; x < len ; x++ ) {
+
+                        let item = res[x];
+
+
+                        let imgcolumn = document.createElement("div")
+                        imgcolumn.className = "col-lg-3 col-md-4 col-sm-12 col-xs-12"
+
+                        let p = document.createElement("p")
+                        p.innerText = item.name
+
+                        if (item == undefined) break
+                        let img = document.createElement("img")
+                        img.src = "data:image/png;base64," + item.val.trim()
+                        img.className = "img-responsive"
+                        //img.style.width = "100%"
+
+                        imgcolumn.appendChild(p)
+                        imgcolumn.appendChild(img)
+
+                        imgrow.appendChild(imgcolumn)
+
+                    }
+                    $("#previews").html(imgrow)
+
 
                 }
             });

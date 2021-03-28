@@ -156,9 +156,11 @@ def _downscale_with_padding(img_path, out_path, down_width, down_height):
 def _get_downscale_with_padding(img, down_width, down_height, resize):
     # img = cv2.imread(img_path)
     ht, wd, cc = img.shape
+
     # minv = min([ht, wd])
-    img = cv2.resize(img, resize)
-    ht, wd, cc = img.shape
+    # img = cv2.resize(img, resize)
+    # ht, wd, cc = img.shape
+
     ww = down_width
     hh = down_height
     averageR = img.mean(axis=0).mean(axis=0)
@@ -455,6 +457,9 @@ def apply_gamma(image, gamma):
 # https://stackoverflow.com/questions/40928205/python-opencv-image-to-byte-string-for-json-transfer
 def preview_img(img_path, ops, resize, angles):
     img = cv2.imread(img_path)
+
+    img = cv2.resize(img, (resize[0], resize[1]))
+
     results = []
     for op in ops:
 

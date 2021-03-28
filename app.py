@@ -106,5 +106,30 @@ def preview_augmentation():
     return json.dumps(imgs)
 
 
+@app.route('/save_pipeline', methods=['POST'])
+def save_pipeline():
+    pipe_path = request.form['path']
+    _pipeline = request.form['pipeline']
+
+    with(open(pipe_path, "w")) as f:
+        f.write(_pipeline)
+
+    f.close()
+
+    return "ok"
+
+
+@app.route('/load_pipeline', methods=['POST'])
+def load_pipeline():
+    pipe_path = request.form['path']
+
+    with(open(pipe_path, "r")) as f:
+        res = f.readline()
+
+    f.close()
+
+    return res
+
+
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
