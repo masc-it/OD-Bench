@@ -17,4 +17,4 @@ It can parse annotations in VOC XML format only. (atm)
 ## Demo
 ![](https://i.ibb.co/QQ2jdpn/Cattura.png)
 
-![](aug_demo.gif)
+![](https://github.com/masc-it/OD-Bench/raw/master/aug_demo.gif)
