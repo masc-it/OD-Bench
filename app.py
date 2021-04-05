@@ -19,6 +19,11 @@ def hello_world():
     return app.send_static_file('augment.html')
 
 
+@app.route('/export')
+def export():
+    return app.send_static_file('export.html')
+
+
 @app.route('/datasetinfo', methods=['POST'])
 def get_dataset_info():
     d_path = request.form['path']
