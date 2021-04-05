@@ -5,6 +5,7 @@ import glob
 import os
 import cv2
 import jinja2
+import xml.etree.ElementTree as ET
 
 
 def get_images(dir_path):
@@ -27,7 +28,35 @@ def get_image_base64(path, index):
     return {"img": jpg_as_text, "w": img.shape[1], "h": img.shape[0], "name": images[index]}
 
 
-def save_xml(w, h, boxes, name):
+def get_labels(dir_path):
+    image_list = []
+    for filename in glob.glob(dir_path + '/*.xml'):
+        image_list.append(filename)
+
+    return image_list
+
+
+def load_xml(xml_path, img_name):
+
+    tree = ET.parse(os.path.join(xml_path, img_name + ".xml"))
+    root = tree.getroot()
+
+    bboxes = []
+
+    for member in root.findall('object'):
+
+        bbox = {"xmin": int(member[4][0].text),
+                "ymin": int(member[4][1].text),
+                "xmax": int(member[4][2].text),
+                "ymax": int(member[4][3].text),
+                "class": member[0].text}
+
+        bboxes.append(bbox)
+
+    return bboxes
+
+
+def save_xml(w, h, boxes, name, path):
 
     # w = 200
     # h = 300
@@ -40,6 +69,6 @@ def save_xml(w, h, boxes, name):
     TEMPLATE_FILE = "templ.xml"
     template = templateEnv.get_template(TEMPLATE_FILE)
     out = template.render(width=w, height=h, boxes=boxes, name=name)
-    with open("%s.xml" % (os.path.basename(name)), "w") as fh:
+    with open("%s.xml" % path, "w") as fh:
         fh.write(out)
         fh.close()

@@ -143,7 +143,11 @@
 
                 </div>
 
+                <div class="form-group">
+                    <label for="input_labels_path">Labels directory</label>
+                    <input type="text" class="form-control" id="input_labels_path" placeholder="Labels directory" value="F:\datasets\people\people_1\train\labels">
 
+                </div>
             </form>
 
 
@@ -153,9 +157,7 @@
                 <button id="btn_load_next" type="button" class="btn btn-primary">Next</button>
 
 
-            <div id="demo-basic">
-            </div>
-                <div class="image-wrapper" id="image-4-wrapper" >
+                <div class="image-wrapper" id="image-4-wrapper" style="margin-top: 16px" >
 
                     </div>
 
@@ -177,11 +179,12 @@
     let editMode = 0
     let editedBox = {}
 
-    function buildBox(id, x,y, w,h){
+    function buildBox(id, x,y, w,h, class_){
 
         return {
 
             "id" : id,
+            "class" : class_,
             "x_min" : x,
             "y_min" : y,
             "x_max" : w+x,
@@ -201,11 +204,6 @@
         function loadImg(indx){
 
 
-            /*
-             w: imgData == {} ? "0" : imgData.w ,
-                    h: imgData == {} ? "0" : imgData.h,
-                    name: imgData == {} ? "" : imgData.name,
-            */
             $.ajax({
                 type: "POST",
                 url: "/load_img",
@@ -217,8 +215,10 @@
                     h: (jQuery.isEmptyObject(imgData) ? "" : imgData.h.toString()),
                     name: (jQuery.isEmptyObject(imgData) ? "" : imgData.name.toString()),
                     boxes: JSON.stringify(boxes),
+                    labels_path : $("#input_labels_path").val(),
 
                 },
+
 
                 success: function (data) {
 
@@ -249,6 +249,10 @@
                     // Initilize
                     $image2.rcrop();
 
+                    console.log(imgData)
+                    if (imgData.bboxes.length > 0){
+                        loadBoxes(imgData.bboxes)
+                    }
                     setupCanvas()
 
                     //$image2.on('rcrop-changed', canvasCallback);
@@ -256,6 +260,22 @@
                 }
             });
         }
+
+        function loadBoxes(_boxes){
+
+            for ( let i = 0; i < _boxes.length; i++){
+
+                let values = _boxes[i]
+
+                boxes.push(buildBox(i, values.xmin, values.ymin, values.xmax-values.xmin, values.ymax-values.ymin, values.class))
+
+                createCanvas(values.xmin, values.ymin, values.xmax-values.xmin, values.ymax-values.ymin, i)
+            }
+
+            num_boxes = _boxes.length
+
+        }
+
 
         function setupCanvas(){
             let btn = document.createElement("span")
@@ -302,6 +322,7 @@
             nameInput.defaultValue = "wq";
             nameInput.style.color = "#212121"
             nameInput.setAttribute('name', 'label');
+            nameInput.setAttribute('id', 'class_');
 
             //Position canvas
             nameInput.style.zIndex= 99999;
@@ -353,6 +374,7 @@
 
             let values = $image2.rcrop('getValues');
 
+            editedBox.class = $("#class_").val()
             editedBox.x_min = values.x
             editedBox.y_min = values.y
             editedBox.x_max = values.width + values.x
@@ -373,11 +395,13 @@
         function canvasCallback(){
             let values = $image2.rcrop('getValues');
 
-            boxes.push(buildBox(num_boxes, values.x, values.y, values.width, values.height))
+            boxes.push(buildBox(num_boxes, values.x, values.y, values.width, values.height, $("#class_").val()))
 
              createCanvas(values.x, values.y, values.width, values.height, num_boxes++)
             //console.log(boxes)
         }
+
+
         $("#btn_new_bbox").click(function (e) {
             e.preventDefault();
             canvasCallback()
@@ -452,9 +476,13 @@
                 for (let [i, box] of boxes.entries()) {
                     if (box.id == this.parentElement.id.split("_")[2]) {
                         editedBox = box
+                        console.log(editedBox)
+                        $("#class_").val(box["class"])
                         break
                     }
-                 }
+                }
+
+
 
                 this.parentElement.remove()
 

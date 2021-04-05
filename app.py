@@ -1,4 +1,5 @@
 # Author: mascIT
+import os
 
 from flask import Flask, render_template, request
 
@@ -43,16 +44,27 @@ def load_img():
     # blob = request.get_json(force=True)
 
     d_path = request.form['path']
+    labels_path = request.form['labels_path']
     index = request.form['index']
     img_width = request.form['w']
     img_height = request.form['h']
     name = request.form['name']
     boxes = request.form['boxes']
     boxes = json.loads(boxes)
-    if len(boxes) > 0:
-        annotate_utils.save_xml(int(img_width), int(img_height), boxes, name)
 
-    return json.dumps(annotate_utils.get_image_base64(d_path, int(index)))
+    # take care of the image just processed
+    if len(boxes) > 0:
+        just_name = os.path.splitext(os.path.basename(name))[0]
+        annotate_utils.save_xml(int(img_width), int(img_height), boxes, name, os.path.join(labels_path, just_name))
+
+    next_img_data = annotate_utils.get_image_base64(d_path, int(index))
+    next_img_name = next_img_data["name"]
+
+    next_img_name = os.path.splitext(os.path.basename(next_img_name))[0]
+
+    next_img_data["bboxes"] = annotate_utils.load_xml(labels_path, next_img_name)
+
+    return json.dumps(next_img_data)
 
 
 @app.route('/apply', methods=['POST'])

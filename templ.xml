@@ -13,7 +13,7 @@
 	<segmented>0</segmented>
     {% for item in boxes %}
 	<object>
-		<name>person</name>
+		<name>{{ item["class"] }}</name>
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
